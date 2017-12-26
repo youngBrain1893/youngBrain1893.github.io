@@ -6,14 +6,18 @@
   <meta name="renderer" content="webkit">
   <meta http-equiv="X-UA-Compatible" content="IE=edge" >
   <link rel="dns-prefetch" href="http://youngBrain1893.github.io">
-  <title>yb</title>
+  <title>记一次CORS跨域实践 | yb</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta property="og:type" content="website">
-<meta property="og:title" content="yb">
-<meta property="og:url" content="http://youngBrain1893.github.io/index.html">
+  <meta name="description" content="前端 ajax 跨域请求应该算是每个前端都应该有的 “理论基础”， 之所以说是 “理论基础” 是因为这是一道经典的面试题，所以基本每个前端都应该知道对应的解决方案。然而实际开发中其实很少会遇到跨域的情况，毕竟大多数的情况下都是访问同一个域内的东西。 先说说面试的答案吧，解决前端跨域请求主要有以下几种方案：  JSONP">
+<meta property="og:type" content="article">
+<meta property="og:title" content="记一次CORS跨域实践">
+<meta property="og:url" content="http://youngBrain1893.github.io/2017/12/26/记一次CORS跨域实践/index.html">
 <meta property="og:site_name" content="yb">
+<meta property="og:description" content="前端 ajax 跨域请求应该算是每个前端都应该有的 “理论基础”， 之所以说是 “理论基础” 是因为这是一道经典的面试题，所以基本每个前端都应该知道对应的解决方案。然而实际开发中其实很少会遇到跨域的情况，毕竟大多数的情况下都是访问同一个域内的东西。 先说说面试的答案吧，解决前端跨域请求主要有以下几种方案：  JSONP 请求 CORS 通过服务端配置 Access-Control-Allow-Or">
+<meta property="og:updated_time" content="2017-12-26T15:51:16.974Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="yb">
+<meta name="twitter:title" content="记一次CORS跨域实践">
+<meta name="twitter:description" content="前端 ajax 跨域请求应该算是每个前端都应该有的 “理论基础”， 之所以说是 “理论基础” 是因为这是一道经典的面试题，所以基本每个前端都应该知道对应的解决方案。然而实际开发中其实很少会遇到跨域的情况，毕竟大多数的情况下都是访问同一个域内的东西。 先说说面试的答案吧，解决前端跨域请求主要有以下几种方案：  JSONP 请求 CORS 通过服务端配置 Access-Control-Allow-Or">
   
     <link rel="alternative" href="/atom.xml" title="yb" type="application/atom+xml">
   
@@ -143,16 +147,14 @@
             <canvas data-colors="#eaeaea" data-sectionHeight="100" data-contentId="js-content" id="myCanvas1" class="anm-canvas"></canvas>
           </div>
           <div id="js-content" class="content-ll">
-            
-  
-    <article id="post-记一次CORS跨域实践" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+            <article id="post-记一次CORS跨域实践" class="article article-type-post " itemscope itemprop="blogPost">
   <div class="article-inner">
     
       <header class="article-header">
         
   
-    <h1 itemprop="name">
-      <a class="article-title" href="/2017/12/26/记一次CORS跨域实践/">记一次CORS跨域实践</a>
+    <h1 class="article-title" itemprop="name">
+      记一次CORS跨域实践
     </h1>
   
 
@@ -175,9 +177,27 @@
 <blockquote>
 <p>其他还有 <code>document.domain</code>, <code>window.name</code> 等方案，由于实际使用场景不大，暂不做分析。</p>
 </blockquote>
-        
-          <a class="article-more-a" href="/2017/12/26/记一次CORS跨域实践/#more">more >></a>
-        
+<a id="more"></a>
+<p>JSONP 的原理是利用 script 标签的加载不受同源策略的限制，动态的加载一个 <code>&lt;script&gt;callback(data);&lt;/script&gt;</code> 标签并执行对应的 <code>callback</code> 来实现的。记住 JSONP 返回的其实是一个 <code>callback</code> 的函数调用，调用的参数(<code>data</code>)由后端服务器根据传入参数(<code>url.query</code>)和业务场景进行填充。</p>
+<p><code>Access-Control-Allow-Origin</code> 跨域方案更像是一个协商机制，对于跨域的请求，服务端在收到请求的时候判断请求是不是来源于被允许的域，如果是就设置对应的响应头告诉客户端该请求是被允许的，而客户端拿到响应头会去解析 <code>Access-Control-Allow-Origin</code> 判断这个跨域请求是不是被允许的，从而决定这个跨域请求的结果是否是合法的。（个人理解，如有不当之处还请指出）</p>
+<p><code>proxy</code> 代理的方案主要是将请求发送到同域的后端服务器上，再由同域的后端去像对应的目标服务器获取数据，前端代码只与同域的服务器进行数据交换，跨域发生在同域的服务器与目标服务器之间，对于前端请求而言不存在跨域。</p>
+<p>本次项目中我们最终选择的是第二种方案——设置 <code>Access-Control-Allow-Origin</code>，主要有以下两个原因：</p>
+<ol>
+<li>JSONP 能解决大多数的跨域场景，但无法实现 <code>post</code> 请求（实际只是加载一个 <code>script</code> 标签），而且请求的参数也只能在 <code>url</code> 中传递。而我们的业务场景中有不可避免的 <code>post</code> 请求，所以无法满足需求。</li>
+<li>在本来就有同域 node 端服务支持的情况下，使用 <code>proxy</code> 方案应该是最优方案，但由于资源不足，时间紧等原因最后放弃了该方案。</li>
+</ol>
+<p><strong>接下来说说遇到的一些问题：</strong><br>问题 1：设置响应头为 <code>Access-Control-Allow-Origin: *</code> 无效<br>最开始后端同学在请求的响应头中设置了 <code>Access-Control-Allow-Origin: *</code>，但是实际联调中 网络请求成功了，在 <code>network</code> 面板下也看到了对应的响应数据，但是程序里面的请求始终无法成功，控制台下提示 <code>*</code> 的值不被允许（当时只是叫后端同学改成返回对应的域，并没有去深究为什么 <code>*</code> 不行，后来看到是因为请求带上了 <code>cookie</code>（做用户身份认证），这种情况下服务端响应头需要设置 <code>Access-Control-Allow-Credentials : true</code> 来运行客户端携带证书式访问，而此时 <code>Access-Control-Allow-Control: *</code> 是不被允许的）<br>后端通过请求 origin 设置 响应 对应 <code>Access-Control-Allow-Origin</code> 可参考这里： <a href="https://www.jianshu.com/p/b587dd1b7086" target="_blank" rel="noopener">Access-Control-Allow-Origin 跨域设置多域名</a> Java 端逻辑上也是类似的。</p>
+<p>问题 2：在 <code>nginx</code> 层和业务代码中都设置 <code>Access-Control-Allow-Origin</code> 跨域依旧存在<br>通过动态在业务代码中设置 <code>Access-Control-Allow-Origin</code> 对应允许跨域的响应头，已经能把请求跑通，完成跨域的操作了，但是如果遇到用户登录信息失效的情况就又有问题了，此时的流程为 <code>request --&gt; nginx --&gt; filter --&gt; response</code> 用户登录信息失效的时候实际还未进入到对应接口的业务逻辑里面（响应里面未设置 <code>Access-Control-Allow-Origin</code>头），虽然后端返回了 <code>302</code> 的信息但又跨域了，所以前端请求又错误了，而且并不能拿到具体的错误内容。所以后端的跨域响应头设置得提前。<br>于是我们在 <code>nginx</code> 层也添加了相同的头信息，此时的流程是 <code>request --&gt; nginx -(添加Access头)-&gt; filter --&gt; 业务代码 -(添加Access头)-&gt; response</code>,在这里我们设置了两个相同的 <code>Access-Control-Allow-Origin</code> 头，<br>如何解决呢，既然我们设置一个 <code>Access-Control-Allow-Origin</code> 的时候可以跑通，现在我们去掉一个多余的头信息设置应该也能跑通，去掉哪一个呢？显然应该是业务代码里面那个，而应该在 <code>nginx</code> 上做，保证每个请求都正确的设置 <code>Access-Control-Allow-Origin</code> 头信息。</p>
+<p><strong>最后说说在后端接口支持跨域前如何先联调起来：</strong><br>此时由于我们的已经能拿到后端返回的数据了(<code>network</code>面板上能看到数据了)，之所以现在我们代码中依然拿不到数据其实是因为浏览器的安全策略阻止了代码中对响应的访问，所以如果我们能临时的关闭浏览器的安全策略是否就能拿到对应的数据了呢，测试完过后答案是肯定的。<br>关闭浏览器安全策略方案可参考这里：<a href="http://www.cnblogs.com/zhongxia/p/5416024.html" target="_blank" rel="noopener">chrome disable-web-security 关闭安全策略 解决跨域</a>，mac 的情况下 <code>--user-data-dir</code> 参数需要指定一个文件目录。</p>
+<blockquote>
+<p>该方法只限于联调阶段，实际场景中不可能让用户以禁止安全策略的方式运行浏览器访问我们的站点。</p>
+</blockquote>
+<p>参考资料：</p>
+<ol>
+<li><a href="https://github.com/FatDong1/cross-domain" target="_blank" rel="noopener">FatDong1/cross-domain</a></li>
+<li><a href="https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Access_control_CORS" target="_blank" rel="noopener">MDN-HTTP访问控制（CORS）</a></li>
+</ol>
+
       
 
       
@@ -188,16 +208,65 @@
       
 
       
-        <p class="article-more-link">
-          <a class="article-more-a" href="/2017/12/26/记一次CORS跨域实践/">展开全文 >></a>
-        </p>
-      
 
+      
+        
+<div class="share-btn share-icons tooltip-left">
+  <div class="tooltip tooltip-east">
+    <span class="tooltip-item">
+      <a href="javascript:;" class="share-sns share-outer">
+        <i class="icon icon-share"></i>
+      </a>
+    </span>
+    <span class="tooltip-content">
+      <div class="share-wrap">
+        <div class="share-icons">
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="icon icon-weibo"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="icon icon-weixin"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="icon icon-qq"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="icon icon-douban"></i>
+          </a>
+          <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a>
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="icon icon-facebook"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="icon icon-twitter"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="icon icon-google"></i>
+          </a>
+        </div>
+      </div>
+    </span>
+  </div>
+</div>
+
+<div class="page-modal wx-share js-wx-box">
+    <a class="close js-modal-close" href="javascript:;"><i class="icon icon-close"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//pan.baidu.com/share/qrcode?url=http://youngBrain1893.github.io/2017/12/26/记一次CORS跨域实践/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div class="mask js-mask"></div>
       
       <div class="clearfix"></div>
     </div>
   </div>
 </article>
+
+  
 
 <aside class="wrap-side-operation">
     <div class="mod-side-operation">
@@ -217,8 +286,14 @@
 
 
 
+  
+  
+  
 
   
+
+  
+
   
 
 
@@ -241,8 +316,8 @@
     <script>
 	var yiliaConfig = {
 		mathjax: false,
-		isHome: true,
-		isPost: false,
+		isHome: false,
+		isPost: true,
 		isArchive: false,
 		isTag: false,
 		isCategory: false,
